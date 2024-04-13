@@ -1,0 +1,38 @@
+.wrapper {
+  width: 50px;
+  border: 2px solid var(--color-light-100);
+  border-radius: 50%;
+  transition: 2s;
+
+  .lineOne {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 46px;
+    height: 46px;
+
+    font-weight: 700;
+
+    background-color: var(--color-light-100);
+    border: 8px dashed var(--color-bg-page);
+    border-radius: 50%;
+  }
+
+  .number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 20px;
+    height: 20px;
+
+    background-color: #0b0a12;
+    border-radius: 50%;
+  }
+
+  &:hover {
+    transform: rotate(720deg);
+    transition: 0.4s;
+  }
+}
