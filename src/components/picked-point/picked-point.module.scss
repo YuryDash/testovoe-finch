@@ -1,7 +1,11 @@
 .wrapper {
+  cursor: pointer;
+
   width: 50px;
+
   border: 2px solid var(--color-light-100);
   border-radius: 50%;
+
   transition: 2s;
 
   .lineOne {

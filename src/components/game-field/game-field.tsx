@@ -1,14 +1,16 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { InitialValue } from '@/App'
-import { Button, PickedPoint, Scale } from '@/components'
+import { Button, Scale } from '@/components'
+import { CheckWinner, checkWinner } from '@/utils/checkWinner'
+import { generateRandomNumbers } from '@/utils/generateRandomNumbers'
+import { mappedPoints } from '@/utils/mappedPoints'
 
 import s from './game-field.module.scss'
 
-import { Point } from '../point'
-
 type Props = {
   firstInitialValue: InitialValue[]
+  gameResult: (res: CheckWinner) => void
   onChooseFirstValue: (firstValues: InitialValue[]) => void
   onChooseSecondValue: (firstValues: InitialValue[]) => void
   secondInitialValue: InitialValue[]
@@ -16,48 +18,93 @@ type Props = {
 
 export const GameField = ({
   firstInitialValue,
+  gameResult,
   onChooseFirstValue,
   onChooseSecondValue,
   secondInitialValue,
 }: Props) => {
-  const [pointsNum, setPointsNum] = useState<number[]>([])
-  const onChooseFirstField = (num: number, id: string) => {
-    if (pointsNum.length === 8) {
+  const [pointsNumFirst, setPointsNumFirst] = useState<number[]>([])
+  const [pointsNumSecond, setPointsNumSecond] = useState<number[]>([])
+  const [checkWin, setCheckWin] = useState<boolean>(false)
+
+  const onChooseField = (num: number, id: string, pick?: boolean, isSecondField?: boolean) => {
+    const pointsNum = isSecondField ? pointsNumSecond : pointsNumFirst
+    const setPointsNum = isSecondField ? setPointsNumSecond : setPointsNumFirst
+    const initialValue = isSecondField ? secondInitialValue : firstInitialValue
+    const setInitialValue = isSecondField ? onChooseSecondValue : onChooseFirstValue
+    const maxPoints = isSecondField ? 1 : 8
+
+    if (pointsNum.length === maxPoints && !pick) {
       return
     }
-    const changedFirstValue = firstInitialValue.map(el => {
-      if (!el.picked) {
-        setPointsNum([...pointsNum, num])
 
-        return el.id === id ? { ...el, picked: !el.picked } : el
-      }
-      if (el.picked) {
-        setPointsNum(pointsNum.filter(el => el !== num))
+    setPointsNum(prevPointsNum => {
+      let newPointsNum
 
-        return el.id === id ? { ...el, picked: !el.picked } : el
+      if (prevPointsNum.includes(num)) {
+        newPointsNum = prevPointsNum.filter(ArrNum => ArrNum !== num)
+      } else {
+        newPointsNum = [...prevPointsNum, num]
       }
+
+      return newPointsNum
     })
 
-    onChooseFirstValue(changedFirstValue)
+    const changedValue = initialValue.map(el => {
+      if (el.id === id) {
+        return { ...el, picked: !el.picked }
+      }
+
+      return el
+    })
+
+    setInitialValue(changedValue)
   }
-  const onChooseSecondField = (num: number, id: string) => {
-    console.log(num)
-    console.log(id)
+  const onChooseRandomValues = () => {
+    const randomNumsFirst = generateRandomNumbers(8, firstInitialValue.length)
+    const randomNumsSecond = generateRandomNumbers(1, secondInitialValue.length)
+
+    setPointsNumFirst(randomNumsFirst)
+    setPointsNumSecond(randomNumsSecond)
+
+    onChooseFirstValue(
+      firstInitialValue.map((el, index) => {
+        return { ...el, picked: randomNumsFirst.includes(index) }
+      })
+    )
+
+    onChooseSecondValue(
+      secondInitialValue.map((el, index) => {
+        return { ...el, picked: randomNumsSecond.includes(index) }
+      })
+    )
   }
 
-  const mappedPointsOne = firstInitialValue.map(el => {
-    if (!el.picked) {
-      return <Point id={el.id} key={el.id} num={el.num} onChoose={onChooseFirstField} />
-    }
-    if (el.picked) {
-      //TODO сделать отбатное оттыкивание в этой fn...
-      return <PickedPoint key={el.id} num={el.num} onChooseChange={} />
-    }
-  })
+  const mappedPointsOne = mappedPoints(firstInitialValue, (num, id, pick) =>
+    onChooseField(num, id, pick)
+  )
+  const mappedPointsTwo = mappedPoints(secondInitialValue, (num, id, pick) =>
+    onChooseField(num, id, pick, true)
+  )
 
-  const mappedPointsTwo = secondInitialValue.map(el => {
-    return <Point id={el.id} key={el.id} num={el.num} onChoose={onChooseSecondField} />
-  })
+  const onCheckWinner = () => {
+    const result = checkWinner(
+      firstInitialValue.length,
+      secondInitialValue.length,
+      pointsNumFirst,
+      pointsNumSecond
+    )
+
+    gameResult(result)
+  }
+
+  useEffect(() => {
+    if (pointsNumFirst.length === 8 && pointsNumSecond.length === 1) {
+      setCheckWin(true)
+    } else {
+      setCheckWin(false)
+    }
+  }, [pointsNumFirst, pointsNumSecond])
 
   return (
     <div className={s.wrapper}>
@@ -66,13 +113,14 @@ export const GameField = ({
         <div style={{ fontWeight: '700' }}>ЗАПОЛНИТЕ БИЛЕТ</div>
       </div>
       <span className={s.ruleTitle}>Выберите 8 чисел в первом поле и 1 число во втором поле</span>
-      <Scale pickedPoint={pointsNum} />
+      <Scale pickedPoint={pointsNumFirst} />
       <div className={s.pointsOne}>{mappedPointsOne}</div>
       <div className={s.wrapperPointsTwo}>
         <div>Поле 2</div>
         <div className={s.pointsTwo}>{mappedPointsTwo}</div>
       </div>
-      <Button btnText={'Случайные числа'} />
+      <Button btnText={'Случайные числа'} callback={onChooseRandomValues} />
+      {checkWin ? <Button btnText={'PLAY'} callback={onCheckWinner} /> : null}
     </div>
   )
 }

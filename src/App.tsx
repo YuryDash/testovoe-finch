@@ -1,7 +1,10 @@
 import { useState } from 'react'
 
+import { WinnerField } from '@/components'
 import { GameField } from '@/components/game-field'
+import { CheckWinner } from '@/utils/checkWinner'
 
+import s from './App.module.scss'
 export type InitialValue = {
   id: string
   num: number
@@ -31,15 +34,41 @@ const secondInitialValue: InitialValue[] = [
 export function App() {
   const [valuesFirst, setValuesFirst] = useState(firstInitialValue)
   const [valuesSecond, setValuesSecond] = useState(secondInitialValue)
+  const [win, setWin] = useState<CheckWinner | null>(null)
+
+  const callBackSetFirstValue = (values: InitialValue[]) => {
+    setValuesFirst(values)
+  }
+
+  const gameResultCallback = (resultGame: CheckWinner) => {
+    setWin(resultGame)
+  }
 
   return (
-    <div style={{ margin: '20px' }}>
+    <div className={s.warpper}>
       <GameField
         firstInitialValue={valuesFirst}
-        onChooseFirstValue={setValuesFirst}
+        gameResult={gameResultCallback}
+        onChooseFirstValue={callBackSetFirstValue}
         onChooseSecondValue={setValuesSecond}
         secondInitialValue={valuesSecond}
       />
+      <div className={s.wrapperWinner}>
+        {win && (
+          <WinnerField
+            title={'Winner Numbers'}
+            verificationValueFirst={win.winnerFirstValues}
+            verificationValueSecond={win.winnerSecondValues}
+          />
+        )}
+        {win && (
+          <WinnerField
+            title={win.winner ? 'You WIN' : 'YOU LOOSE'}
+            verificationValueFirst={win.verificationValueFirst}
+            verificationValueSecond={win.verificationValueSecond}
+          />
+        )}
+      </div>
     </div>
   )
 }
